@@ -76,7 +76,7 @@ func (db *DB) ExecuteQuery(ctx context.Context, query string, args ...any) ([]ma
 	}).Debug("Executing Query")
 	rows, err := db.conn.QueryxContext(ctx, query, args...)
 	if err != nil {
-		if err.Is(err, context.DeadlineExceeded) || err.Is(err, context.Canceled) {
+		if err == context.DeadlineExceeded || err == context.Canceled {
 			logger.WithComponent("db").WithError(err).
 				WithField("query", query).
 				Warn("Query canceled or timed out")
