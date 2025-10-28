@@ -1,0 +1,46 @@
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+url_shortener
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+urls.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Go build cache
+go-build/
+
+# Go test cache
+go-test/
+
+# Go module cache
+go-mod-cache/
+
+# Coverage files
+*.out
+coverage.txt
+
+# Development files
+basics.go
