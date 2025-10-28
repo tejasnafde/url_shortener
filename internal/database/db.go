@@ -4,7 +4,7 @@ import (
 	// "database/sql"
 	"context"
 	"time"
-	// "github.com/jmoiron/sqlx" temporarily commented
+	"github.com/jmoiron/sqlx" 
 	_ "github.com/mattn/go-sqlite3"
 	"url_shortener/pkg/logger"
 )
@@ -57,4 +57,50 @@ func GetConnection(dsn string) (*DB, error) {
 
 func (db *DB) Close() error {
 	return db.conn.Close()
+}
+
+func (db *DB) ExecuteQuery(ctx context.Context, query string, args ...any) ([]map[string]any, error) {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx , cancel = context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+	}
+	// if ctx.Err() == context.DeadlineExceeded {
+	// 	logger.Logger.Warn("Query timed out")
+	// 	return nil, ctx.Err()
+	// }
+	logger.WithComponent("db").
+	WithFields(map[string]any{
+		"query": query,
+		"args":  args,
+	}).Debug("Executing Query")
+	rows, err := db.conn.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if err.Is(err, context.DeadlineExceeded) || err.Is(err, context.Canceled) {
+			logger.WithComponent("db").WithError(err).
+				WithField("query", query).
+				Warn("Query canceled or timed out")
+		} else {
+			logger.WithComponent("db").WithError(err).
+				WithField("query", query).
+				Error("Query failed")
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	var out []map[string]any
+	for rows.Next() {
+		m := map[string]any{}
+		if err := rows.MapScan(m); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	logger.WithComponent("db").
+	WithFields(map[string]any{
+		"rows":  len(out),
+		"query": query,
+	}).
+	Debug("Query succeeded")
+	return out, rows.Err()
 }
